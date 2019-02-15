@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const minimatch = require('minimatch');
+const { execSync } = require('child_process');
 
 const app = express();
 app.use(bodyParser.json());
@@ -85,6 +86,15 @@ app.post('*', function(req, resp) {
             }
 
             console.log('Processing hook with command: ' + hook.command);
+            try {
+                var stdout = execSync(hook.command, {
+                    'env': process.env
+                });
+                console.log(stdout.toString());
+            }
+            catch(err) {
+                console.error('Command failed');
+            }
         });
 
         resp.sendStatus(200);
