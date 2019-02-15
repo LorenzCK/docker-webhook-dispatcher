@@ -11,7 +11,9 @@ RUN apk update && \
     pip --no-cache-dir install 'docker-compose==1.23.1'
 
 RUN npm install -g \
-    express
+    express \
+    body-parser \
+    minimatch
 ENV NODE_PATH /usr/local/lib/node_modules
 
 # Create working directory with volume for hooks

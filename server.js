@@ -1,12 +1,16 @@
 const express = require('express');
+const bodyParser = require('body-parser');
 const fs = require('fs');
+const minimatch = require('minimatch');
+
 const app = express();
+app.use(bodyParser.json());
 
 const WEB_HOST = process.env.WEB_HOST || '0.0.0.0';
 const WEB_PORT = process.env.WEB_PORT || 8080;
 
 function parseHookString(s, originalFile, hookCommand) {
-    var m = s.match(/([0-9]+)(?:[-_]?([a-zA-Z]+))?/);
+    var m = s.match(/([0-9]+)(?:[-_]?([a-zA-Z*]+))?/);
     if(!m || m.length < 2) {
         console.error((originalFile || s) + ' does not match valid syntax');
         return null;
@@ -17,14 +21,14 @@ function parseHookString(s, originalFile, hookCommand) {
         console.error((originalFile || s) + ' repository ID is non-numeric');
         return null;
     }
-    var hookType = m[2];
-    if(!hookType) {
-        hookType = null;
+    var hookEvent = m[2];
+    if(!hookEvent) {
+        hookEvent = '*';
     }
 
     return {
         'id': repoId,
-        'hook': hookType,
+        'event': hookEvent,
         'command': (originalFile || hookCommand)
     };
 }
@@ -44,7 +48,6 @@ files.forEach(element => {
 
 // Load hooks from environment
 for(var element in process.env) {
-    console.log('Env: ' + element);
     if(element.startsWith('HOOK_')) {
         var hookInfo = parseHookString(element.substring(5).toLowerCase(), null, process.env[element]);
         if(hookInfo) {
@@ -63,10 +66,33 @@ hookMap.forEach(element => {
 })
 
 app.post('*', function(req, resp) {
-    console.log("Connection from %s", req.ip); // this logs the client's IP address
-  
-    resp.status(200); // this is not required
-    resp.send("Hello world!");
+    var repoId = req.body.repository.id;
+    var hookEvents = req.body.hook.events;
+    var hookSecret = req.body.hook.config.secret;
+
+    if(repoId && hookEvents && hookEvents.length > 0 && hookSecret) {
+        hookMap.forEach(hook => {
+            if(hook.id != repoId) {
+                // Hook doesn't match repo ID
+                return;
+            }
+
+            if(!hookEvents.some(event => {
+                return minimatch(event, hook.event);
+            })) {
+                // Hook doesn't match any events
+                return;
+            }
+
+            console.log('Processing hook with command: ' + hook.command);
+        });
+
+        resp.sendStatus(200);
+    }
+    else {
+        console.error('Received non-processable request, ignoring');
+        resp.sendStatus(400);
+    }
 });
 
 const server = app.listen(WEB_PORT, WEB_HOST, function() {
