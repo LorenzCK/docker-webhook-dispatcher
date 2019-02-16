@@ -67,6 +67,12 @@ hookMap.forEach(element => {
 })
 
 app.post('*', function(req, resp) {
+    if(!req.get('User-Agent').includes('GitHub-Hookshot')) {
+        console.error('Non GitHub webhook request');
+        resp.sendStatus(400);
+        return;
+    }
+
     const repoId = req.body.repository.id;
     const hookEvent = req.get('X-GitHub-Event');
 
