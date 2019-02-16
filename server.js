@@ -67,21 +67,20 @@ hookMap.forEach(element => {
 })
 
 app.post('*', function(req, resp) {
-    var repoId = req.body.repository.id;
-    var hookEvents = req.body.hook.events;
-    var hookSecret = req.body.hook.config.secret;
+    const repoId = req.body.repository.id;
+    const hookEvent = req.get('X-GitHub-Event');
 
-    if(repoId && hookEvents && hookEvents.length > 0 && hookSecret) {
+    if(repoId && hookEvent) {
+        console.log('Webhook payload: ' + JSON.stringify(req.body));
+
         hookMap.forEach(hook => {
             if(hook.id != repoId) {
                 // Hook doesn't match repo ID
                 return;
             }
 
-            if(!hookEvents.some(event => {
-                return minimatch(event, hook.event);
-            })) {
-                // Hook doesn't match any events
+            if(!minimatch(hookEvent, hook.event)) {
+                // Hook doesn't match event
                 return;
             }
 
@@ -100,7 +99,7 @@ app.post('*', function(req, resp) {
         resp.sendStatus(200);
     }
     else {
-        console.error('Received non-processable request, ignoring');
+        console.error('Received non-processable request (no repository ID or X-GitHub-Event header), ignoring');
         resp.sendStatus(400);
     }
 });
