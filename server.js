@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const minimatch = require('minimatch');
-const { execSync } = require('child_process');
+const { spawnSync } = require('child_process');
 
 const app = express();
 app.use(bodyParser.json());
@@ -86,10 +86,11 @@ app.post('*', function(req, resp) {
 
             console.log('Processing hook with command: ' + hook.command);
             try {
-                var stdout = execSync(hook.command, {
+                var processReturn = spawnSync(hook.command, [], {
+                    'stdio': 'inherit',
                     'env': process.env
                 });
-                console.log(stdout.toString());
+                console.log('Terminated with exit code ' + processReturn.status + '.');
             }
             catch(err) {
                 console.error('Command failed');
