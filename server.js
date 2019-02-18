@@ -27,8 +27,8 @@ app.use(bodyParser.json({
     }
 }));
 
-const WEB_HOST = process.env.WEB_HOST || '0.0.0.0';
-const WEB_PORT = process.env.WEB_PORT || 8080;
+const WEB_HOST = process.env.WEBHOOK_DISPATCHER_HOST || '0.0.0.0';
+const WEB_PORT = process.env.WEBHOOK_DISPATCHER_PORT || 8080;
 
 function parseHookString(s, originalFile, hookCommand) {
     var m = s.match(/([0-9]+)(?:[-_]?([a-zA-Z*]+))?/);
@@ -78,7 +78,7 @@ for(var element in process.env) {
 }
 
 if(hookMap.length == 0) {
-    console.log('No hook scripts found in /app/hooks directory');
+    console.log('No hook scripts found (use environment variables or mount /app/hooks)');
     process.exit(1);
 }
 console.log('Registered ' + hookMap.length + ' hooks:');
